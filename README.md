@@ -2,7 +2,7 @@
 
 This repository contains a set of useful scripts templates for pentesters and security researchers. 
 
-## scripts
+## Scripts by category
 
 + [Web](./scripts/web/)
    - [exploitation](./scripts/web/exploitation/)
